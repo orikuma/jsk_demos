@@ -279,7 +279,7 @@
   (:handle-callback
    (msg)
    (let* ((data (send msg :data))) ;; data is estimated as radius
-       (send self :turn data :rad t :mode :once)
+       (send self :turn data :rad t :mode :sequence)
      )
    )
   (:accel-callback
@@ -469,6 +469,7 @@
    (let ((count 0))
      (do-until-key
       (send self :estimate-current-handle-angle)
+      (send motion :execute-turn-handle)
       (ros::spin-once)
       (ros::sleep)
       )

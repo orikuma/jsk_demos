@@ -8,6 +8,7 @@
           car ;; car model
           real ;; use real robot or not
           steering-arm-ik-seed
+          turn-handle-queue
           ) 
   )
 
@@ -21,10 +22,10 @@
          car tmp-car
          real tmp-real
          steering-arm-ik-seed nil
+         turn-handle-queue (instance queue :init)
          )
    (when real
      (send *ri* :set-interpolation-mode :linear) ;; avoid sudden change in joint angles when steering
-     (unix::sleep 10) ;; wait activation
      )
    (send self :put :grasp-arm grasp-arm)
    (send self :put :grasp-point grasp-point)
@@ -250,12 +251,13 @@
    )
   (:turn-handle
    (deg  &key (limb (send self :get :grasp-arm)) (target-handle (send self :get :grasp-point))
-         (time 100) (relative t) (debug-view nil) (use-controller t) (stop 50)
+         (time 50) (relative t) (debug-view nil) (stop 50)
          (rotation-axis 0) (resolution 5.0) (use-ik-seed t)
+         (execute nil) (use-controller t)
          )
-   (let* ((steering-coords nil) (avs nil) (tms nil) (remain-angle)
+   (let* ((steering-coords nil) (avs nil) (tms nil) (remain-angle) (ik-count 0)
           (target-degree (if relative deg (- deg (send car :handle-joint :joint-angle))))
-          real-target-degree steering-ik-result
+          real-target-degree steering-ik-result controller
           )
      ;; set default rotation-axis
      (when (equal rotation-axis 0)
@@ -310,11 +312,8 @@
                            )
                      )
                (if ik-ret
-                   (progn (push (send robot :angle-vector) avs)
-                          (if tms
-                              (push time tms)
-                            (push (* time 5) tms)
-                            )
+                   (progn (send turn-handle-queue :enqueue (list (send robot :angle-vector) time))
+                          (setq ik-count (1+ ik-count))
                           )
                  (progn (when (and steering-arm-ik-seed use-ik-seed)
                           (send robot (send self :get :grasp-arm) :angle-vector old-limb-angle-vector) ;; resume angle-vector
@@ -326,26 +325,14 @@
              t ;; all ik succeed
              )
            )
-     ;; define controller
-     (if use-controller
-         (case limb
-           (:larm (setq controller :larm-controller))
-           (:rarm (setq controller :rarm-controller))
-           (:lleg (setq controller :lleg-controller))
-           (:rleg (setq controller :rleg-controller))
-           (t (setq controller :default-controller))
-           )
-       (setq controller :default-controller)
-       )
-     ;; send angle-vector-sequence to real robot
-     (when real
-       (send *ri* :angle-vector-sequence (reverse avs) (reverse tms) controller)
-       (send *ri* :wait-interpolation controller)
-       (send *viewer* :draw-objects)
+     (when execute
+       (while (not (send turn-handle-queue :empty?))
+         (send self :execute-turn-handle :limb limb :use-controller use-controller :wait t)
+         )
        )
      ;; calc remaining handle degree
      (setq remain-angle (abs real-target-degree))
-     (dolist (av avs)
+     (dotimes (i ik-count)
        (setq remain-angle (max (- remain-angle resolution) 0))
        )
      ;; (if (> target-degree 0) remain-angle (- remain-angle))
@@ -356,9 +343,38 @@
      remain-angle ;; return remaining handle angle
      )
    )
+  (:execute-turn-handle
+   (&key (limb (send self :get :grasp-arm)) (use-controller t) (wait nil))
+   (let ((angle-vector-and-time (send turn-handle-queue :dequeue))
+         controller
+         )
+     (when angle-vector-and-time
+       ;; define controller
+       (if use-controller
+           (case limb
+             (:larm (setq controller :larm-controller))
+             (:rarm (setq controller :rarm-controller))
+             (:lleg (setq controller :lleg-controller))
+             (:rleg (setq controller :rleg-controller))
+             (t (setq controller :default-controller))
+             )
+         (setq controller :default-controller)
+         )
+       ;; send angle-vector-sequence to real robot
+       (when real
+         ;; (warn "av:~A~%time:~A~%" (elt angle-vector-and-time 0) (elt angle-vector-and-time 1))
+         (send *ri* :angle-vector (elt angle-vector-and-time 0) (elt angle-vector-and-time 1) controller)
+         (when wait
+           (send *ri* :wait-interpolation-smooth (elt angle-vector-and-time 1) controller)
+           )
+         )
+         ;; (send *viewer* :draw-objects)
+       )
+     )
+   )
   (:turn-handle-once
    (deg  &key (limb (send self :get :grasp-arm)) (target-handle (send self :get :grasp-point))
-         (time 100) (relative t) (debug-view nil) (use-controller t) (stop 50)
+         (time 50) (relative t) (debug-view nil) (use-controller t) (stop 50)
          (rotation-axis 0) (use-ik-seed t)
          )
    (let ((target-degree (if relative deg (- deg (send car :handle-joint :joint-angle))))
@@ -431,7 +447,7 @@
      (when real
        (send *ri* :angle-vector (send self :robot :angle-vector) time controller)
        ;; (send *ri* :wait-interpolation controller)
-       (send *viewer* :draw-objects)
+       ;; (send *viewer* :draw-objects)
        )
      0.0 ;; return remain-angle (= zero)
      )
