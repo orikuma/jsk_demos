@@ -2,10 +2,10 @@
   <!--
       This is a launch file for Main PC of Operator Control Station (OCS)
   -->
-  <arg name="FC_IP" value="localhost"/>
-  <arg name="OCS_IP" value="localhost"/>
+  <arg name="FC_IP" default="localhost"/>
+  <arg name="OCS_IP" default="localhost"/>
 
-  <arg name="USE_COM" value="true"/>
+  <arg name="USE_COM" default="true"/>
 
   <!-- executive -->
   <node pkg="drc_task_common" type="vehicle-ocs-executive.l" name="vehicle_ocs_executive" output="screen">
@@ -16,6 +16,15 @@
            file="$(find drc_com_common)/launch/vehicle_operator_station_com.launch">
     <arg name="FC_IP" value="$(arg FC_IP)" />
     <arg name="OCS_IP" value="$(arg OCS_IP)" />
+  </include>
+
+  <!-- ui -->
+  <include file="$(find drc_task_common)/launch/fc/vehicle.launch">
+    <arg name="LAUNCH_UI" value="true" />
+    <arg name="LAUNCH_PS3JOY" value="true" />
+    <arg name="LAUNCH_EUS" value="false" />
+    <arg name="LAUNCH_HANDLE_DETECTOR" value="false" />
+    <arg name="OCS_NS" value="ocs" />
   </include>
 
 </launch>

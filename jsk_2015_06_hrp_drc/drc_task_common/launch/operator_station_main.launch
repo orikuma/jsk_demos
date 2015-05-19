@@ -158,4 +158,12 @@
       </rosparam>
     </node>
   </group>
+
+  <!-- vehicle -->
+  <include file="$(find drc_task_common)/launch/vehicle_operator_station_main.launch">
+    <arg name="FC_IP" value="$(arg FC_IP)" />
+    <arg name="OCS_IP" value="$(arg OCS_IP)" />
+    <arg name="USE_COM" value="$(arg USE_COM)" />
+  </include>
+
 </launch>
