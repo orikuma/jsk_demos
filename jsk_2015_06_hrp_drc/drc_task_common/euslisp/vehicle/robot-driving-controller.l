@@ -79,23 +79,6 @@
        (ros::service-call "/drive/operation/initialize" req t)
        )
      )
-   
-   ;; subscriber for operator command
-   (ros::subscribe "/drive/operation/accel_cmd"
-                   std_msgs::Float64
-                   #'send self :accel-callback)
-   (ros::subscribe "/drive/operation/brake_cmd"
-                   std_msgs::Float64
-                   #'send self :brake-callback)
-   (ros::subscribe "/drive/operation/handle_cmd"
-                   std_msgs::Float64
-                   #'send self :handle-callback)
-   (ros::subscribe "/drive/operation/neck_y_cmd"
-                   std_msgs::Float64
-                   #'send self :neck-y-callback)
-   (ros::subscribe "/drive/operation/neck_p_cmd"
-                   std_msgs::Float64
-                   #'send self :neck-p-callback)
 
    ;; handle-angle topics
    (ros::advertise "/drive/controller/goal_handle_angle" std_msgs::Float32 1 t)
@@ -111,7 +94,7 @@
    ;; neck command topics
    (ros::advertise "/drive/controller/neck_y_angle" std_msgs::Float32 1 t)
    (ros::advertise "/drive/controller/neck_p_angle" std_msgs::Float32 1 t)
-   
+
    ;; for steering visualization
    (ros::advertise "/drive/controller/currest_steering" jsk_recognition_msgs::TorusArray 1)
    (ros::advertise "/drive/controller/handling_trajectory" geometry_msgs::PolygonStamped 1)
@@ -121,7 +104,7 @@
    (ros::subscribe "/drive/torus_finder/output/pose"
                    geometry_msgs::PoseStamped
                    #'send self :torus-finder-callback)
-   
+
    ;; for crank recognition
    (setq tf-listener (instance ros::transform-listener :init))
    (ros::subscribe "/handle_pose"
@@ -133,7 +116,7 @@
    (ros::advertise "/drive/controller/accel_mode" std_msgs::String 1)
    (ros::advertise "/drive/controller/brake_mode" std_msgs::String 1)
    (ros::advertise "/drive/controller/neck_mode" std_msgs::String 1)
-   
+
    ;; for vehicle ui
    (ros::advertise-service "/drive/controller/initialize" std_srvs::Empty #'send self :initialize-callback)
    (ros::advertise-service "/drive/controller/approach_handle" std_srvs::Empty #'send self :approach-handle-callback)
@@ -153,6 +136,7 @@
    (ros::advertise-service "/drive/controller/overwrite_handle_angle" drc_task_common::SetValue #'send self :overwrite-handle-angle-callback)
 
    ;; initialize plist
+   ;; after advertise publisher and before subscribe controller input
    (send self :controller-state :handle :initialize)
    (send self :controller-state :accel :initialize)
    (send self :controller-state :brake :initialize)
@@ -160,7 +144,24 @@
    (send self :controller-mode :accel :stop)
    (send self :controller-mode :brake :stop)
    (send self :controller-mode :neck :stop)
-
+   
+   ;; subscriber for operator command
+   (ros::subscribe "/drive/operation/accel_cmd"
+                   std_msgs::Float64
+                   #'send self :accel-callback)
+   (ros::subscribe "/drive/operation/brake_cmd"
+                   std_msgs::Float64
+                   #'send self :brake-callback)
+   (ros::subscribe "/drive/operation/handle_cmd"
+                   std_msgs::Float64
+                   #'send self :handle-callback)
+   (ros::subscribe "/drive/operation/neck_y_cmd"
+                   std_msgs::Float64
+                   #'send self :neck-y-callback)
+   (ros::subscribe "/drive/operation/neck_p_cmd"
+                   std_msgs::Float64
+                   #'send self :neck-p-callback)
+   
    ;; set real flag without moving model
    (send motion :real tmp-real :use-real-robot-angle nil)
    )
@@ -169,7 +170,7 @@
   (:initialize-callback
    (req)
    (let ((res (send req :response)))
-     (send self :initialize :sync t)
+     (send self :initialize :sync nil)
      res
      )
    )
@@ -197,7 +198,7 @@
   (:correct-callback
    (req)
    (let ((res (send req :response)))
-     (send self :correct-handle-pose :yes t)
+     (send self :correct-handle-pose :yes t :look-at-handle nil)
      res
      )
    )
@@ -288,7 +289,8 @@
      (warn "overwrite handle angle to ~A~%" (send motion :car :handle-joint :joint-angle))
      (ros::publish "/drive/controller/goal_handle_angle" pub-msg)
      (when (ros::wait-for-service "/drive/operation/synchronize" 1)
-       (let ((req (instance std_srvs::EmptyRequest :init)))
+       (let ((req (instance drc_task_common::StringRequestRequest :init)))
+         (send req :data "handle")
          (ros::service-call "/drive/operation/synchronize" req t)
          )
        )
@@ -298,30 +300,34 @@
   
   ;; interface command
   (:initialize
-   (&key (sync nil) (time 10000) (real (send motion :real)))
-   (when (and sync (not (send *ri* :simulation-modep)))
-     (send motion :sync-all-controller)
-     )
-   (let ()
+   (&rest args &key (sync nil) (time 10000) (real (send motion :real)) (fist-offset #f(0 0 25)) (floor-offset #f(0 0 0)))
+   (let () ;; sync is executed according to controller-mode, not real flag
+     (when sync
+       (send motion :sync-all-controller) ;; execute sync-controller forcely in all limbs
+       )
      (send motion :real nil :use-real-robot-angle nil) ;; temporary disable (send *ri* :angle-vector)
      (warn "init-pose~%")
      (send motion :ride :init-pose t)
      (send motion :drive-init-pose-crank :limb :larm :move-arm nil) ;; todo: fix and remove
      (warn "approach-fist~%")
-     (send self :approach-fist :reach-until-touch nil)
+     (send self :approach-fist :offset fist-offset :reach-until-touch nil)
      (warn "approach-accel~%")
-     (send self :approach-accel)
+     (send self :approach-accel) ;; sync is executed when (equal (send self :controller-state :accel) :running) automatically
      (warn "approach-floor~%")
-     (send self :approach-floor :offset #f(0 0 0))
+     (send self :approach-floor :offset floor-offset :reach-until-touch nil)
      (warn "approach-handle~%")
-     (send self :approach-handle)
+     (send self :approach-handle) ;; sync is executed when (equal (send self :controller-state :handle) :running) automatically
      (send self :publish-body-relative-steering-coords)
      ;; move head front
      (warn "init-head~%")
      (send self :neck-cmd 0.0 :neck-p :time 2000)
      (send self :neck-cmd 0.0 :neck-y :time 2000)
-     (send motion :model2real :time time :wait-interpolation t :real real) ;; send *ri* :angle-vector if real is t
+     (warn "send-initial-pose~%")
      (send motion :real real :use-real-robot-angle nil) ;; set real as argument
+     (send motion :model2real :time time :wait-interpolation t) ;; send *ri* :angle-vector if real is t (default :real is set above)
+     (warn "init-hand~%")
+     (send motion :open-hand (send motion :grasp-arm))
+     (send motion :close-hand (get-opposite-arm (send motion :grasp-arm)))
      )
    ;; initialize joy_vehicle if exists
    (when (ros::wait-for-service "/drive/operation/initialize" 1)
@@ -329,20 +335,15 @@
        (ros::service-call "/drive/operation/initialize" req t)
        )
      )
-   ;; enable operation
-   (send self :controller-mode :handle :operation)
-   (send self :controller-mode :accel :operation)
-   (send self :controller-mode :neck :operation)
+   ;; init operation mode
+   (send self :controller-mode :handle :stop)
+   (send self :controller-mode :accel :stop)
+   (send self :controller-mode :neck :stop)
    nil
    )
   (:grasp
    (&rest args)
    (let (grasp-result)
-     (when (ros::wait-for-service "/drive/operation/synchronize" 1)
-       (let ((req (instance std_srvs::EmptyRequest :init)))
-         (ros::service-call "/drive/operation/synchronize" req t)
-         )
-       )
      (setq grasp-result (send* motion :grasp-handle args))
      (when grasp-result
        (send self :controller-state :handle :running)
@@ -364,7 +365,7 @@
    )
   (:correct-handle-pose
    (&key (yes nil) (grasp t) (time 2500) (look-at-handle t))
-   (let (ret-result approach-result grasp-result)     
+   (let (ret-result approach-result grasp-result)
      (setq handle-pose-estimate-flag t)
      (setq ret-result (send self :execute-handle-pose-compensation :yes yes :look-at-handle look-at-handle))
      ;; grasp in new handle coords
@@ -425,7 +426,6 @@
              (t (send motion :turn-handle handle-deg :relative nil :use-controller t))
              )
            )
-       
      ;; publish target angle
      (send pub-msg :data handle-deg)
      (ros::publish "/drive/controller/goal_handle_angle" pub-msg)
@@ -499,6 +499,21 @@
    (send self :controller-mode :accel :stop)
    ;; stop handling
    (send self :controller-mode :handle :stop)
+   ;; sync
+   (when (and sync (not (send *ri* :simulation-modep)))
+     (let ((sync-list nil))
+       (when (equal (send self :controller-state :handle) :running)
+         (push (send motion :grasp-arm) sync-list)
+         )
+       (when (equal (send self :controller-state :accel) :running)
+         (push :rleg sync-list)
+         )
+       (when (equal (send self :controller-state :brake) :running)
+         (push :lleg sync-list)
+         )
+       (send motion :sync-all-controller sync-list)
+       )
+     )
    ;; execute egress
    (send* motion :go-to-egress args)
    )
@@ -761,7 +776,9 @@
           )
      (send motion :robot :newcoords estimated-robot-coords)
      (send *viewer* :draw-objects)
+     (warn "apply new robot coords~%")
      (unless (or yes (y-or-n-p)) ;; y-or-n-p is not evaluated when yes is t
+       (warn "revert old robot coords~%")
        (send motion :robot :newcoords old-robot-coords) ;; revert
        )
      (send motion :robot :copy-worldcoords)
@@ -796,7 +813,7 @@
                         (send msg :header :frame_id)
                         (send msg :header :stamp))) ;; cascaded-coords: body->camera
            body-relative-handle-pose
-           )       
+           )
        (unless trans
          (warn "Failed to solve tf~%")
          (return-from :handle-pose-callback nil)
@@ -843,10 +860,11 @@
        (return-from :execute-handle-pose-compensation nil)
        )
      (warn "release handle~%")
-     (if (equal (send self :controller-state :handle) :running)
-         (setq release-result (send self :release :offset release-offset))
-       (setq release-result t)
-       )
+     ;; (if (equal (send self :controller-state :handle) :running)
+     ;;     (setq release-result (send self :release :offset release-offset))
+     ;;   (setq release-result t)
+     ;;   )
+     (setq release-result (send self :release :offset release-offset))
      (when release-result
        ;; temporary ;;
        (send (send motion :robot) (send motion :grasp-arm) :shoulder-y :joint-angle shoulder-y-deg)
@@ -955,8 +973,17 @@
    (target &optional (new-state nil))
    ;; :initialize -> :release <-> :running
    (let ((target-state (read-from-string (format nil ":~A-state" (string-downcase target))))) ;; plist assumes :<target>-state
+     ;; update to new state
      (when (member new-state state-list)
        (send self :put target-state new-state)
+       ;; synchronize command when updated
+       (when (ros::wait-for-service "/drive/operation/synchronize" 1)
+         (warn "call sync ~A~%" (string-downcase target))
+         (let ((req (instance drc_task_common::StringRequestRequest :init)))
+           (send req :data (string-downcase target))
+           (ros::service-call "/drive/operation/synchronize" req t)
+           )
+         )
        )
      (send self :get target-state)
      )
@@ -973,6 +1000,14 @@
        (send self :put target-mode new-mode)
        (send pub-mode :data (string-downcase (send self :get target-mode)))
        (eval (list 'ros::publish (format nil "/drive/controller/~A_mode" (string-downcase target)) pub-mode))
+       ;; synchronize command when updated
+       (when (ros::wait-for-service "/drive/operation/synchronize" 1)
+         (warn "call sync ~A~%" (string-downcase target))
+         (let ((req (instance drc_task_common::StringRequestRequest :init)))
+           (send req :data (string-downcase target))
+           (ros::service-call "/drive/operation/synchronize" req t)
+           )
+         )
        ;; (warn (format nil "/drive/controller/~A_mode~%" (string-downcase target)))
        )
      (send self :get target-mode)
@@ -1042,7 +1077,9 @@
   (:execute
    (&key (publish-steering-trajectory nil))
    (do-until-key
-    (send self :estimate-current-handle-angle)
+    (when (equal (send self :controller-state :handle) :running) ;; estimate handle angle only when handling
+      (send self :estimate-current-handle-angle)
+      )
     (send self :calc-error-of-grasp-arm :display-result nil)
     (send self :record-handling-end-coords)
     (when publish-steering-trajectory
@@ -1063,7 +1100,7 @@
       )
     (warn "make controller: ~A~%" controller-name)
     (setq *controller* (eval (list 'instance (read-from-string controller-name) :init :real real)))
-    (send *controller* :initialize)
+    ;; (send *controller* :initialize) ;; initialize can be called from ui
     (send *controller* :execute)
     )
   )
