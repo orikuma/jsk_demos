@@ -16,7 +16,7 @@ done
 
 
 tmux-newwindow() {
-    if [ `tmux list-windows | grep $1 | sed -e 's/ //g' >/dev/null &2>1` ]; then
+    if [ `tmux list-windows | grep $1 | sed -e 's/ //g' >/dev/null 2>&1` ]; then
         echo $1 "already exists"
     else
         tmux new-window -k -n $1 -t fc
@@ -43,10 +43,13 @@ tmux-newwindow drill_recognition_for_wall "sleep 3; roslaunch drc_task_common dr
 tmux-newwindow drill_recognition_for_put "sleep 3; roslaunch drc_task_common drill_recognition_for_put.launch"
 tmux-newwindow drill_button_checker "sleep 3; roslaunch drc_task_common drill_button_checker.launch"
 tmux-newwindow door_recognition "sleep 5; roslaunch drc_task_common door_unvisible_handle_recognition.launch"
-tmux-newwindow debri_recognition "sleep 5; roslaunch drc_task_common debri_recognition.launch"
+# tmux-newwindow debri_recognition "sleep 5; roslaunch drc_task_common hose_connect.launch"
+# tmux-newwindow debri_recognition "sleep 5; roslaunch drc_task_common hose_grasp.launch"
+# tmux-newwindow debri_recognition "sleep 5; roslaunch drc_task_common debri_recognition.launch"
 # tmux-newwindow panorama "roslaunch drc_task_common panorama.launch"
 tmux-newwindow fisheye "sleep 5; roslaunch drc_task_common fisheye_lookat.launch"
 tmux-newwindow locomotion "sleep 5; roslaunch drc_task_common locomotion.launch"
+tmux-newwindow vehicle "roslaunch drc_task_common vehicle_field_computer_main.launch USE_COM:=false ROBOT:=${ROBOT,,}"
 tmux-newwindow misc "sleep 5; roslaunch drc_task_common fc_misc.launch"
 tmux-newwindow com "sleep 5; roslaunch drc_com_common field_computer_com.launch FC_IP:=${FC_IP} OCS_IP:=${OCS_IP}"
 tmux send-keys -t fc:tmp "exit" C-m

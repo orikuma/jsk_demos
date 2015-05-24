@@ -752,8 +752,27 @@
     (send self :show-text "Execute drill-wall motion" :execute)
     ;; do something magical!!
     ;; send drill-wall params to fc
-    (setq drill-wall-params
-          (list (get-primitive-marker-pose :frame-id "BODY" :name "drill_wall")))
+    (cond ((get-marker-existence "drill_wall")
+           (setq drill-wall-params
+                 (list (get-primitive-marker-pose :frame-id "BODY" :name "drill_wall"))))
+          ((get-marker-existence "box1")
+           (setq drill-wall-params
+                 (list (get-primitive-marker-pose :frame-id "BODY" :name "box1")))
+           (let* ((dims (get-primitive-marker-dimensions :name "box1"))
+                  (x (/ (elt dims 0) 2))
+                  (y (/ (elt dims 1) 2))
+                  )
+             (setq drill-wall-target-coords (list
+                                             (make-coords :pos (float-vector (+ x 30) y 0))
+                                             (make-coords :pos (float-vector (- x) y 0))
+                                             (make-coords :pos (float-vector (- x) (- y) 0))
+                                             (make-coords :pos (float-vector x (- y) 0))
+                                             (make-coords :pos (float-vector x (+ y 30) 0))
+                                             ))
+             )
+           )
+          (t (send self :show-text "no marker set! insert box or recog wakk" :warn))
+          )
     (let ((msg (instance drc_com_common::OCS2FCSmall :init)))
       (send msg :type drc_com_common::OCS2FCSmall::*DRILL_WALL_EXEC*)
       (send msg :float_params (coords-set-to-float-vector (get-coords-list-with-center (elt drill-wall-params 0) drill-wall-target-coords) (length (send msg :float_params))))
@@ -1061,7 +1080,7 @@
           ;; end marker
           (setq drill-wall-target-coords (get-relative-coords-list center-coords coords-set))
 	  (setq *drill-main-arm* (send self :get-arm-side))
-          (publish-drill-wall-motion :coords-list coords-set :update? t :stand-coords (make-coords) :overwrite-stand-coords? :force)
+          (publish-drill-wall-motion :coords-list coords-set :update? t :stand-coords (make-coords) :overwrite-stand-coords? :force :draw? nil)
           (let ((index (position-if #'(lambda (x) (equal (elt x 0) :wall)) drill-stand-coords-list)))
             (if index
                 (progn
@@ -1289,6 +1308,16 @@
            ;; publish drill motion to robot model on rviz
 	   (setq *drill-main-arm* (send self :get-arm-side))
            (publish-drill-grasp-motion :coords (elt drill-grasp-params 0) :update? t :stand-coords (get-robot-model-current-pos) :overwrite-stand-coords? overwrite-stand-coords? :drill-rotate-num drill-rotate-num) ;;drill-type
+           (let ((index (position-if #'(lambda (x) (equal (elt x 0) :grasp)) drill-stand-coords-list)))
+             (if index
+                 (progn
+                   (setf (elt drill-stand-coords-list index) (list :grasp (convert-coords-frame (if (boundp '*drill-stand-coords-forced*) *drill-stand-coords-forced* (make-coords)))))
+                   (setq drill-stand-coords-index index))
+               (progn
+                 (push-back (list :grasp (convert-coords-frame (if (boundp '*drill-stand-coords-forced*) *drill-stand-coords-forced* (make-coords)))) drill-stand-coords-list)
+                 (setq drill-stand-coords-index (- (length drill-stand-coords-list) 1))
+                 )))
+           
 	   (if (or (not (boundp '*drill-motion*)) (not *drill-motion*))
 	       (send self :show-text 
 		  "IK FAIL")
@@ -1334,11 +1363,39 @@
            )
           ((eq (send smachine :state) :selecting-exec-for-drill-wall)
            ;; update latest drill-button params
-           (setq drill-wall-params
-                  (list (get-primitive-marker-pose :frame-id "BODY" :name "drill_wall")))
-           ;; publish drill motion to robot model on rviz
 	   (setq *drill-main-arm* (send self :get-arm-side))
+           (cond ((get-marker-existence "drill_wall")
+                  (setq drill-wall-params
+                        (list (get-primitive-marker-pose :frame-id "BODY" :name "drill_wall"))))
+                 ((get-marker-existence "box1")
+                  (setq drill-wall-params
+                        (list (get-primitive-marker-pose :frame-id "BODY" :name "box1")))
+                  (let* ((dims (get-primitive-marker-dimensions :name "box1"))
+                         (x (/ (elt dims 0) 2))
+                         (y (/ (elt dims 1) 2))
+                         )
+                    (setq drill-wall-target-coords (list
+                                                    (make-coords :pos (float-vector (+ x 30) y 0))
+                                                    (make-coords :pos (float-vector (- x) y 0))
+                                                    (make-coords :pos (float-vector (- x) (- y) 0))
+                                                    (make-coords :pos (float-vector x (- y) 0))
+                                                    (make-coords :pos (float-vector x (+ y 30) 0))
+                                                    ))
+                    )
+                  )
+                 (t (send self :show-text "no marker set! insert box or recog wakk" :warn))
+                 )
+           ;; publish drill motion to robot model on rviz
            (publish-drill-wall-motion :coords-list (get-coords-list-with-center (elt drill-wall-params 0) drill-wall-target-coords) :update? t :stand-coords (get-robot-model-current-pos) :overwrite-stand-coords? overwrite-stand-coords?)
+           (let ((index (position-if #'(lambda (x) (equal (elt x 0) :wall)) drill-stand-coords-list)))
+             (if index
+                 (progn
+                   (setf (elt drill-stand-coords-list index) (list :wall (convert-coords-frame (if (boundp '*drill-stand-coords-forced*) *drill-stand-coords-forced* (make-coords)))))
+                   (setq drill-stand-coords-index index))
+              (progn
+                (push-back (list :wall (convert-coords-frame (if (boundp '*drill-stand-coords-forced*) *drill-stand-coords-forced* (make-coords)))) drill-stand-coords-list)
+                (setq drill-stand-coords-index (- (length drill-stand-coords-list) 1))
+                )))
 	   (if (or (not (boundp '*drill-motion*)) (not *drill-motion*))
 	       (send self :show-text 
 		     "IK FAIL")
@@ -1416,9 +1473,12 @@
      (setq *drill-main-arm* (send self :get-arm-side))
      (setq drill-grasp-relative-coords (send (send *robot* *drill-main-arm* :end-coords :copy-worldcoords) :transformation (send *drill* :copy-coords)))
      )
-   (if (and drill-grasp-relative-coords (boundp '*drill-main-arm*))
-       (if (equal *drill-main-arm* :rarm) (set-primitive-marker-pose drill-grasp-relative-coords "rarm_end_coords" :name "drill") (set-primitive-marker-pose drill-grasp-relative-coords "larm_end_coords" :name "drill")
+   (when (and drill-grasp-relative-coords (boundp '*drill-main-arm*))
+     (when (not (get-marker-existence "drill"))
+       (insert-primitive-marker :shape-type jsk_rviz_plugins::TransformableMarkerOperate::*MESH_RESOURCE* :name "drill" :description "" :resource "package://drc_task_common/models/takenoko_drill.dae" :use-material t)
        )
+     (if (equal *drill-main-arm* :rarm) (set-primitive-marker-pose drill-grasp-relative-coords "rarm_end_coords" :name "drill") (set-primitive-marker-pose drill-grasp-relative-coords "larm_end_coords" :name "drill")
+         )
      )
     (send req :response)
    )
@@ -1716,7 +1776,7 @@
        (progn
          (move-robot-model (elt (elt drill-stand-coords-list drill-stand-coords-index) 1) "/odom_on_ground")
          (send self :show-text (format nil "GOPOS for ~A Push EXEC" (elt (elt drill-stand-coords-list drill-stand-coords-index) 0)))
-         (setq drill-stand-coords-index (mod (+ drill-stand-coords-index) (length drill-stand-coords-list)))
+         (setq drill-stand-coords-index (mod (+ drill-stand-coords-index 1) (length drill-stand-coords-list)))
          )
      (send self :show-text "Please firstly find drill and recog")
      )
@@ -1810,6 +1870,7 @@
 ;; generate *robot*
 (setq *robot-name* (string-upcase (unix::getenv "ROBOT")))
 (generate-robot *robot-name* :generate-ri? nil)
+(set-drill-environment :draw? nil :generate-ri? nil) ;; for init param
 
 ;; advertise
 (ros::advertise "/ocs/rviz/visualization/ocs_executive_message"
