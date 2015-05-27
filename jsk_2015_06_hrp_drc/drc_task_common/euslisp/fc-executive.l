@@ -114,6 +114,8 @@
                 self :hrpsys-start-imp-command-soft-cb)
           (list drc_com_common::OCS2FCSmall::*HRPSYS_START_IMP_HARD*
                 self :hrpsys-start-imp-command-hard-cb)
+          (list drc_com_common::OCS2FCSmall::*HRPSYS_RESET_FORCE_OFFSET*
+                self :hrpsys-reset-force-offset-cb)
           (list drc_com_common::OCS2FCSmall::*HRPSYS_STOP_ABC*
                 self :hrpsys-stop-abc-command-cb)
           (list drc_com_common::OCS2FCSmall::*HRPSYS_STOP_ST*
@@ -967,18 +969,18 @@ It sends :angle-vector to robot and return 'finished' message to ocs"
      (format t ":limb-grasp-callback: ~A (~A)~%"
              (if (eq pose :grasp) :start-grasp :stop-grasp) limb)
      (send *ri* (if (eq pose :grasp) :start-grasp :stop-grasp) limb))
-    ((and (find-method *ri* :hand-anngle-vector)
-          (find-method (send *ri* :get-val 'robot) :hand-anngle-vector))
+    ((and (find-method *ri* :hand-angle-vector)
+          (find-method (send *ri* :get-val 'robot) :hand-angle-vector))
      (cond
-      ((eq (length (send (send *ri* :get-val 'robot) :hand-anngle-vector))
+      ((eq (length (send (send *ri* :get-val 'robot) :hand-angle-vector))
            (length av))
        (format t ":limb-grasp-callback: receive hav=~A~%" av)
        (send (send *ri* :get-val 'robot) :hand-angle-vector av))
       (t
        (format t ":limb-grasp-callback: grasp-pose=~A~%"
-               (if (eq pose :grasp) :grasp-pose :open-pose))
+               (if (eq pose :grasp) :grasp-pose :hook-pose))
        (send (send *ri* :get-val 'robot) :hand limb
-             (if (eq pose :grasp) :grasp-pose :open-pose))))
+             (if (eq pose :grasp) :grasp-pose :hook-pose))))
      (send *ri* :hand-angle-vector
            (send (send *ri* :get-val 'robot) :hand-angle-vector))
      ))
@@ -1111,7 +1113,15 @@ It sends :angle-vector to robot and return 'finished' message to ocs"
     (hand-stop-grasp :real? t)
     (send self :send-rviz-button-finished-to-ocs))
   (:hand-grasp-pose-command-callback (msg)
-    (hand-start-grasp :real? t :type :default-grasp)
+    (cond
+     ((or (equal *robot-name* "HRP2JSKNTS") (equal *robot-name* "HRP2JSKNT"))
+      (drill-t-grasp :arm :arms)
+      (unix::usleep 500000)
+      (drill-full-grasp :arm :arms)
+      )
+     (t
+      (hand-start-grasp :real? t :type :default-grasp)
+      ))
     (send self :send-rviz-button-finished-to-ocs))
   (:hrpsys-start-abc-command-cb (msg)
     (send *ri* :start-auto-balancer)
@@ -1128,6 +1138,9 @@ It sends :angle-vector to robot and return 'finished' message to ocs"
     (send self :send-rviz-button-finished-to-ocs))
   (:hrpsys-start-imp-command-hard-cb (msg)
     (start-hard-impedance)
+    (send self :send-rviz-button-finished-to-ocs))
+  (:hrpsys-reset-force-offset-cb (msg)
+    (send *ri* :reset-force-moment-offset-arms)
     (send self :send-rviz-button-finished-to-ocs))
   (:hrpsys-stop-abc-command-cb (msg)
     ;(send *ri* :stop-auto-balancer)
