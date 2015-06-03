@@ -47,6 +47,7 @@
                 drill-button-params ;; (list coords)
                 drill-rotate-params
                 drill-grasp-relative-coords
+                drill-throw-flag
                 foreground-bacground-sync-obj
                 arm-mode ;; one of (:rarm-only :rarm-preferred :larm-preferred :larm-only)
                 valve-grasp-mode ;; one of (:edge-grasp-only :edge-grasp-preferred :center-grasp-preferrned :center-grasp-only)
@@ -153,7 +154,7 @@
     (setq drill-wall-target-coords nil)
     (setq valve-grasp-mode :edge-grasp-preferred)
     (setq door-push/pull :push)
-    (setq door-name :drc-lasvegas)
+    (setq door-name :drc-sagami)
     (setq drill-arm-environment :larm)
     (setq force-overwrite-door-arm :force)
     (send self :show-text "initialized" :success)
@@ -1835,6 +1836,34 @@
    (ros::ros-info (format nil "drill auto ~A" drill-stand-coords-list))
    (send req :response)
    )
+  (:drill-throw-callback
+   (req)
+   (send self :show-text "drill throw exec flag set to true")
+   (setq drill-throw-flag t)
+   (send req :response)
+   )
+  (:drill-throw-exec-callback
+   (req)
+   (if drill-throw-flag
+       (progn
+         (send self :show-text "drill throw command send")
+         (let ((msg (instance drc_com_common::OCS2FCSmall :init)))
+           (send msg :type drc_com_common::OCS2FCSmall::*DRILL_THROW*)
+           (cond ((not (boundp '*drill-main-arm*))
+                  (send msg :arm_side drc_com_common::OCS2FCSmall::*UNDECIDED*))
+                 ((equal *drill-main-arm* :larm)
+                  (send msg :arm_side drc_com_common::OCS2FCSmall::*LARM*))
+                 ((equal *drill-main-arm* :rarm)
+                  (send msg :arm_side drc_com_common::OCS2FCSmall::*RARM*))
+                 (t
+                  (send msg :arm_side drc_com_common::OCS2FCSmall::*UNDECIDED*))
+                 )          
+           (send self :send-to-fc msg))
+         )
+     (send self :show-text "drill throw locked by flag" :warn)
+     )
+   (send req :response)
+   )
   ;; door arm overwrite
   (:force-overwrite-door-arm-callback
    (req)
@@ -2052,6 +2081,20 @@
       (send self :show-text "Done footstep")
       (send ocs-footstep-controller :set-succeeded (send ocs-footstep-controller :result))
       (send smachine :go-to :initial)))
+  (:set-foot-steps-callback (msg)       ;msg = FootstepArray
+    (when (send smachine :state? :initial)
+      (let ((fc-msg (instance drc_com_common::OCS2FCSmall :init)))
+        (multiple-value-bind
+         (flot-footsteps int-footsteps)
+         (footstep-array->vector msg
+                                 (length (send fc-msg :float_params))
+                                 (length (send fc-msg :image_roi_info)))
+         (send fc-msg :type drc_com_common::OCS2FCSmall::*SIMPLE_FOOTSTEP_EXEC*)
+         (send fc-msg :float_params float-footsteps)
+         (send fc-msg :image_roi_info int-footsteps)
+         (send self :send-to-fc fc-msg))
+        )
+      ))
   ;; (:footstep-plan-execute-cb 
   ;;  (goal)
   ;;  (when (and (send smachine :next? :planning-footsteps)
@@ -2181,7 +2224,8 @@
 (ros::advertise-service "drill_rotate_two" std_srvs::Empty #'send *app* :drill-rotate-two-callback)
 (ros::advertise-service "drill_rotate_three" std_srvs::Empty #'send *app* :drill-rotate-three-callback)
 (ros::advertise-service "drill_auto_go_pos" std_srvs::Empty #'send *app* :drill-auto-go-pos-callback)
-
+(ros::advertise-service "drill_throw" std_srvs::Empty #'send *app* :drill-throw-callback)
+(ros::advertise-service "drill_throw_exec" std_srvs::Empty #'send *app* :drill-throw-exec-callback)
 (ros::advertise-service "reach_until_touch_command_from_ocs" drc_task_common::ReachUntilTouchCommand #'send *app* :reach-until-touch-from-ocs)
 (ros::advertise-service "set_drill_coords" std_srvs::Empty #'send *app* :set-drill-coords)
 (ros::advertise-service "auto_door_detect" std_srvs::Empty #'send *app* :set-door-detect-auto-callback)
@@ -2215,6 +2259,8 @@
   #'send *app* :stair-marker-output-callback)
 (ros::subscribe "/stair_marker/debug/current_pose_array" geometry_msgs::PoseArray
   #'send *app* :stair-footstep-show-callback)
+(ros::subscribe "/set_foot_steps" jsk_footstep_msgs::FootstepArray
+  #'send *app* :set-foot-steps-callback)
 
 ;; (ros::subscribe "/ocs/communication/image_rect_color/foreground_rect/scaled" geometry_msgs::PolygonStamped
 ;;   #'send *app* :foreground-rect-callback)

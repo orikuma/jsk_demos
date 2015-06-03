@@ -27,7 +27,8 @@
    ;; (send self :accel-origin -9.69405)
    ;; (send self :step-accel-command 6)
    (send self :step-accel-command 15.0)
-   (send self :release-accel-command 0.0)
+   (send self :release-accel-command 5.0)
+   (send self :detach-accel-command 0.0)
    ;; (send self :step-accel-command 10)
    ;; (send self :release-accel-command 4)
    )
@@ -43,11 +44,11 @@
                 :release-offset release-offset :shoulder-y-deg shoulder-y-deg
                 args)
    )
-  (:brake-cmd
-   (cmd)
-   (warn "Real Vehicle Mode: Brake Disabled~%")
-   (send self :accel-cmd 0.0) ;; release accel forcely
-   )
+  ;; (:brake-cmd
+  ;;  (cmd)
+  ;;  (warn "Real Vehicle Mode: Brake Disabled~%")
+  ;;  (send self :accel-cmd 0.0) ;; release accel forcely
+  ;;  )
   )
 
 (defun jaxon-vehicle-main

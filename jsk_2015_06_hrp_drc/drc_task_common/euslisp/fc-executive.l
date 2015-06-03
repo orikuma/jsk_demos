@@ -106,6 +106,8 @@
                 self :drill-rotate-region-command-callback)
           (list drc_com_common::OCS2FCSmall::*DRILL_ROTATE_EXEC*
                 self :drill-rotate-exec-command-callback)
+          (list drc_com_common::OCS2FCSmall::*DRILL_THROW*
+                self :drill-throw-exec-command-callback)
           ;; rviz plugins
           (list drc_com_common::OCS2FCSmall::*RESET_POSE*
                 self :reset-pose-command-callback)
@@ -119,6 +121,8 @@
                 self :door-through-pose-command-callback)
           (list drc_com_common::OCS2FCSmall::*FINISH_STAIR_POSE*
                 self :finish-stair-pose-command-callback)
+          (list drc_com_common::OCS2FCSmall::*EMERGENCY_POSE*
+                self :emergency-pose-command-callback)
           (list drc_com_common::OCS2FCSmall::*RESET_ENC_OFFSET*
                 self :reset-enc-offset-command-callback)
           (list drc_com_common::OCS2FCSmall::*HAND_RESET_POSE*
@@ -190,6 +194,8 @@
                 self :execute-footstep-callback)
           (list drc_com_common::OCS2FCSmall::*REQUEST_FOOTSTEP_PLANNING*
                 self :request-footstep-planning-callback)
+          (list drc_com_common::OCS2FCSmall::*SIMPLE_FOOTSTEP_EXEC*
+                self :simple-footstep-exec-callback)
           )
     self)
   (:register-timelimits (sm)
@@ -643,6 +649,22 @@
         (send smachine :go-to :initial)
         ))
     )
+  (:drill-throw-exec-command-callback (msg)
+    (when (send smachine :state? :initial)
+        (let* ((arm-side (send msg :arm_side))
+               (arm (cond ((equal arm-side drc_com_common::OCS2FCSmall::*LARM*) :larm) ((equal arm-side drc_com_common::OCS2FCSmall::*RARM*) :rarm) (t nil))))
+	       (if arm
+                   (progn
+                     (setq *drill-main-arm* arm)
+                     )
+                 (ros::ros-info "arm side empty")
+                 )
+               )
+        (send-drill-throw-motion)
+        (send self :send-rviz-button-finished-to-ocs)
+      )
+    )
+  
   (:door-exec-command-callback (msg)
     (when (send smachine :state? :initial)
       (multiple-value-bind
@@ -1139,7 +1161,7 @@ It sends :angle-vector to robot and return 'finished' message to ocs"
         (ros::ros-info "arm side empty")
         )
       )
-    (when (or (equal *robot-name* "HRP2JSKNTS") (equal *robot-name* "HRP2JSKNT"))
+    (when (or t (equal *robot-name* "HRP2JSKNTS") (equal *robot-name* "HRP2JSKNT"))
       (send *robot* :angle-vector (get-reach-drill-pre-pose))
       (model2real :time 5000)
       )
@@ -1147,16 +1169,25 @@ It sends :angle-vector to robot and return 'finished' message to ocs"
     (model2real :time 5000)
     (send self :send-rviz-button-finished-to-ocs))
   (:door-through-pose-command-callback (msg)
+    (when (or (equal *robot-name* "JAXON") (equal *robot-name* "JAXON_RED") (equal *robot-name* "STARO"))
+      (start-hard-impedance))
+    (hand-start-grasp :real? t)
     (send *robot* :angle-vector (get-door-through-pose))
     (send *ri* :angle-vector (send *robot* :angle-vector) 5000)
     (send *ri* :wait-interpolation)
-    (hand-start-grasp :real? t)
     (send self :send-rviz-button-finished-to-ocs))
   (:finish-stair-pose-command-callback (msg)
-    (walking-pose *robot* :root-link-pitch-offset 0 :root-link-height-offset -300 :default-pose-method :narrow-width-pose)
-    (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
-    (send *ri* :wait-interpolation)
-    (send self :send-rviz-button-finished-to-ocs))
+    (when (or (equal *robot-name* "JAXON") (equal *robot-name* "JAXON_RED") (equal *robot-name* "STARO"))
+      (walking-pose *robot* :root-link-pitch-offset 0 :root-link-height-offset -300 :default-pose-method :narrow-width-pose)
+      (send *ri* :angle-vector (send *robot* :angle-vector) 3000)
+      (send *ri* :wait-interpolation)
+      (send self :send-rviz-button-finished-to-ocs)
+      ))
+  (:emergency-pose-command-callback (msg)
+    (when (or (equal *robot-name* "JAXON") (equal *robot-name* "JAXON_RED") (equal *robot-name* "STARO"))
+      ;; todo : send emergency pose
+      (send self :send-rviz-button-finished-to-ocs)
+      ))
   (:reset-enc-offset-command-callback (msg)
     ()
     (cond ((equal *robot-name* "JAXON")
@@ -1424,6 +1455,23 @@ It sends :angle-vector to robot and return 'finished' message to ocs"
                      (send ocs-msg :type drc_com_common::FC2OCSSmall::*FOOTSTEP_PLANNING_RESULT*))))
                 (send self :send-to-ocs ocs-msg))))))
       (send smachine :go-to :initial)))
+  (:simple-footstep-exec-callback
+    (msg)
+    (ros::ros-info ":simple-footstep-exec-callback")
+    (when (send smachine :state? :initial)
+      (let ((footstep-array (vector->footstep-array
+                             (send msg :float_params)
+                             (send msg :image_roi_info))))
+        (let ((footstep-coords (mapcar
+                                #'(lambda (f)
+                                    (make-coords :coords (ros::tf-pose->coords (send f :pose))
+                                                 :name (if (eq (send f :leg)
+                                                               jsk_footstep_msgs::Footstep::*LEFT*)
+                                                           :lleg
+                                                         :rleg)))
+                                       (send footstep-array :footsteps))))
+          (send *ri* :set-foot-steps footstep-coords)
+          ))))
   (:execute-footstep-callback
     (msg)
     (ros::ros-info ":execute-footstep-callback")

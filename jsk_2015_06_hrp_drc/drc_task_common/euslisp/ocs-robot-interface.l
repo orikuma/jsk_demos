@@ -110,11 +110,11 @@
    (let* ((param? (and (numberp m-p) (numberp d-p) (numberp k-p)
                        (numberp m-r) (numberp d-r) (numberp k-r)))
           (msg
-           (instance*  drc_com_common::OCS2FCSmall :init
-                       :type (if param?
-                                 drc_com_common::OCS2FCSmall::*START_IMP_WITH_PARAM*
-                               drc_com_common::OCS2FCSmall::*START_IMP*)
-                       :arm_side (send self :get-limb-ocs-param-from-keyword limb))))
+           (instance drc_com_common::OCS2FCSmall :init
+                     :type (if param?
+                               drc_com_common::OCS2FCSmall::*START_IMP_WITH_PARAM*
+                             drc_com_common::OCS2FCSmall::*START_IMP*)
+                     :arm_side (send self :get-limb-ocs-param-from-keyword limb))))
      (if param?
          (let* ((float_params (send msg :float_params)))
            (setf (aref float_params 0) m-p)
@@ -152,6 +152,16 @@
   ;;  (ros::publish "/ocs_to_fc_low_speed/input"
   ;;   (instance  drc_com_common::OCS2FCSmall :init
   ;;              :type drc_com_common::OCS2FCSmall::*HRPSYS_STOP_ABC*)))
+  ;;
+  (:go-pos
+   (x y yaw)
+   (let* ((msg (instance drc_com_common::OCS2FCSmall :init
+                         :type drc_com_common::OCS2FCSmall::*GO_POS_EXEC*)))
+     (setf (aref (send msg :float_params) 0) (* 1e+3 x))
+     (setf (aref (send msg :float_params) 1) (* 1e+3 y))
+     (setf (aref (send msg :float_params) 3) (deg2rad yaw))
+     (ros::publish "/ocs_to_fc_low_speed/input" msg)))
+  ;;
   ;; callbacks
   (:ocs-joint-state-callback
    (msg)

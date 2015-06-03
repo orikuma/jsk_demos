@@ -125,4 +125,8 @@ uint8 GO_POS_ZERO=68
 
 uint8 FINISH_STAIR_POSE=69
 uint8 RESET_ENC_OFFSET=70
-# next number is 71
+uint8 DRILL_THROW=71
+
+uint8 SIMPLE_FOOTSTEP_EXEC=72
+uint8 EMERGENCY_POSE=73
+# next number is 74

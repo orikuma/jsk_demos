@@ -12,6 +12,7 @@
 (setq *latest-step* nil)
 (setq *latest-min-step* nil)
 (setq *latest-max-step* nil)
+(setq *latest-detach-step* nil)
 (setq *latest-neck-y-angle* nil)
 (setq *latest-neck-p-angle* nil)
 (setq *latest-handle-mode* nil)
@@ -31,6 +32,7 @@
 (setq *egress-service-client* (instance empty-service-client :init "/drive/controller/egress"))
 (setq *set-max-step-service-client* (instance set-value-service-client :init "/drive/controller/set_max_step"))
 (setq *set-min-step-service-client* (instance set-value-service-client :init "/drive/controller/set_min_step"))
+(setq *set-detach-step-service-client* (instance set-value-service-client :init "/drive/controller/set_detach_step"))
 (setq *overwrite-handle-angle-service-client* (instance set-value-service-client :init "/drive/controller/overwrite_handle_angle"))
 (setq *set-handle-mode-service-client* (instance set-controller-mode-service-client :init "/drive/controller/set_handle_mode"))
 (setq *set-accel-mode-service-client* (instance set-controller-mode-service-client :init "/drive/controller/set_accel_mode"))
@@ -40,6 +42,9 @@
 (defun ocs-message-callback (msg)
   (let (tmp-msg)
     (setq *vehicle-fc-executive-enable-flag* (send msg :execute_flag))
+    (setq tmp-msg (make-msg-from-tunnel msg :execute_flag std_msgs::Bool))
+    (ros::publish "/drive/execute_flag" tmp-msg)
+    
     (setq tmp-msg (make-msg-from-tunnel msg :handle_cmd std_msgs::Float64))
     (ros::publish "/drive/operation/handle_cmd" tmp-msg)
     (setq tmp-msg (make-msg-from-tunnel msg :accel_cmd std_msgs::Float64))
@@ -54,6 +59,7 @@
     (send *grasp-service-client* :call (send msg :grasp_request))
     (send *release-service-client* :call (send msg :release_request))
     (send *correct-service-client* :call (send msg :correct_request))
+    (send *resume-service-client* :call (send msg :resume_request))
     (send *approach-handle-service-client* :call (send msg :approach_handle_request))
     (send *approach-accel-service-client* :call (send msg :approach_accel_request))
     (send *reach-arm-service-client* :call (send msg :reach_arm_request))
@@ -61,6 +67,7 @@
     (send *egress-service-client* :call (send msg :egress_request))
     (send *set-max-step-service-client* :call (send msg :set_max_step_request) (send msg :set_max_step_request_value))
     (send *set-min-step-service-client* :call (send msg :set_min_step_request) (send msg :set_min_step_request_value))
+    (send *set-detach-step-service-client* :call (send msg :set_detach_step_request) (send msg :set_detach_step_request_value))
     (send *overwrite-handle-angle-service-client* :call (send msg :overwrite_handle_angle_request) (send msg :overwrite_handle_angle_request_value))
     (send *set-handle-mode-service-client* :call (send msg :set_handle_mode_request) (send msg :set_handle_mode_request_value))
     (send *set-accel-mode-service-client* :call (send msg :set_accel_mode_request) (send msg :set_accel_mode_request_value))
@@ -83,6 +90,9 @@
   )
 (defun max-step-callback (msg)
   (setq *latest-max-step* (send msg :data))
+  )
+(defun detach-step-callback (msg)
+  (setq *latest-detach-step* (send msg :data))
   )
 (defun neck-y-angle-callback (msg)
   (setq *latest-neck-y-angle* (send msg :data))
@@ -124,6 +134,9 @@
     (when *latest-max-step*
       (send msg :max_step *latest-max-step*)
       )
+    (when *latest-detach-step*
+      (send msg :detach_step *latest-detach-step*)
+      )
     (when *latest-neck-y-angle*
       (send msg :neck_y_angle *latest-neck-y-angle*)
       )
@@ -157,6 +170,7 @@
     (send msg :egress_response (send *egress-service-client* :response))
     (send msg :set_max_step_response (send *set-max-step-service-client* :response))
     (send msg :set_min_step_response (send *set-min-step-service-client* :response))
+    (send msg :set_detach_step_response (send *set-detach-step-service-client* :response))
     (send msg :overwrite_handle_angle_response (send *overwrite-handle-angle-service-client* :response))
     (send msg :set_handle_mode_response (send *set-handle-mode-service-client* :response))
     (send msg :set_accel_mode_response (send *set-accel-mode-service-client* :response))
@@ -173,6 +187,9 @@
 (ros::advertise "/fc_to_ocs_vehicle/input" drc_com_common::VehicleFC2OCSSmall)
 (ros::subscribe "/fc_from_ocs_vehicle/output" drc_com_common::VehicleOCS2FCSmall #'ocs-message-callback)
 
+;; message to recognition
+(ros::advertise "/drive/execute_flag" std_msgs::Bool 1)
+
 ;; message to driving-controller
 (ros::advertise "/drive/operation/handle_cmd" std_msgs::Float64 1)
 (ros::advertise "/drive/operation/accel_cmd" std_msgs::Float64 1)
@@ -186,6 +203,7 @@
 (ros::subscribe "/drive/controller/step" std_msgs::Float32 #'step-callback)
 (ros::subscribe "/drive/controller/min_step" std_msgs::Float32 #'min-step-callback)
 (ros::subscribe "/drive/controller/max_step" std_msgs::Float32 #'max-step-callback)
+(ros::subscribe "/drive/controller/detach_step" std_msgs::Float32 #'detach-step-callback)
 (ros::subscribe "/drive/controller/neck_y_angle" std_msgs::Float32 #'neck-y-angle-callback)
 (ros::subscribe "/drive/controller/neck_p_angle" std_msgs::Float32 #'neck-p-angle-callback)
 (ros::subscribe "/drive/controller/real" std_msgs::Bool #'real-callback)
