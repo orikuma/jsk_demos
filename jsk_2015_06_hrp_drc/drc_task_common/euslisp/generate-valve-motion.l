@@ -487,28 +487,34 @@
           ))
       ;; pre grasp
       (send *robot* :angle-vector (car (last valve-motion-av-list)))
-      (when real? (model2real :time 5000))
+      (when real? (model2real :time 4000))
       (dotimes (i rotate-num)
         ;; grasp
         (send *robot* :angle-vector (car valve-motion-av-list))
         (when real? (model2real :time 3000))
         (hand-start-grasp :real? real?)
         ;; rotate
-        (when real? (send-angle-vector-sequence-with-time (cdr (subseq valve-motion-av-list 0 (/ valve-motion-length 2))) :time 1000 :wait? t))
+        (when real? (send-angle-vector-sequence-with-time (cdr (subseq valve-motion-av-list 0 (/ valve-motion-length 2))) :time 700 :wait? t))
         ;; relese
         (hand-stop-grasp :real? real?)
         (send *robot* :angle-vector (car (subseq valve-motion-av-list (/ valve-motion-length 2))))
-        (when real? (model2real :time 3000))
+        (when real? (model2real :time 2000))
         (cond ((= i (1- rotate-num))
                ;; last releasing
                (send *robot* :reset-manip-pose)
                (when real? (model2real :time 5000))
-               (when (or (equal *robot-name* "JAXON") (equal *robot-name* "STARO") (equal *robot-name* "JAXON_RED"))
-                 (when real? (start-hard-impedance)))
+               (when real?
+                 (cond ((or (equal *robot-name* "JAXON") (equal *robot-name* "STARO") (equal *robot-name* "JAXON_RED"))
+                        (start-hard-impedance)
+                        )
+                       (t ;; (or (equal *robot-name* "HRP2JSKNT") (equal *robot-name* "HRP2JSKNTS"))
+                        (start-soft-impedance)
+                        ))
+                 )
                )
               (t
                ;; reverse
-               (when real? (send-angle-vector-sequence-with-time (cdr (subseq valve-motion-av-list (/ valve-motion-length 2))) :time 1000 :wait? t))
+               (when real? (send-angle-vector-sequence-with-time (cdr (subseq valve-motion-av-list (/ valve-motion-length 2))) :time 700 :wait? t))
                ))
         )))
   )

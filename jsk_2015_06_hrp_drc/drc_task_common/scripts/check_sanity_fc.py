@@ -9,7 +9,9 @@ from colorama import Fore, Style
 from jsk_tools.sanity_lib import (okMessage, errorMessage, warnMessage, indexMessage,
                                   checkTopicIsPublished,
                                   checkROSMasterCLOSE_WAIT, checkNodeState,
-                                  checkSilverHammerSubscribe)
+                                  checkSilverHammerSubscribe,
+                                  checkGitRepoWithRosPack,
+                                  checkBlackListDaemon)
 from std_msgs.msg import Time
 from sensor_msgs.msg import PointCloud2, Image
 from jsk_recognition_msgs.msg import (ModelCoefficientsArray,
@@ -22,10 +24,15 @@ from geometry_msgs.msg import PolygonStamped, Point32
 from jsk_hrp2_ros_bridge.sanity_util import checkMultisenseRemote
 
 if __name__ == "__main__":
-    rospy.init_node("chesk_sanity_fc")
+    indexMessage("Check Daemons in FC")
+    checkBlackListDaemon(["chrome", "dropbox", "skype"], kill=False)
     
     host = re.match("http://([0-9a-zA-Z]*):.*", os.environ["ROS_MASTER_URI"]).groups(0)[0]
     checkROSMasterCLOSE_WAIT(host)
+
+    indexMessage("Check Git Repos in FC")
+    checkGitRepoWithRosPack("drc_task_common")
+    rospy.init_node("chesk_sanity_fc")
 
     indexMessage("Check Nodes in FC")
     checkNodeState("/fc_to_ocs_basic_low_speed", True)
@@ -157,10 +164,10 @@ if __name__ == "__main__":
     checkSilverHammerSubscribe("/fc_to_ocs_vehicle/last_send_time", 1.0, 0.4, timeout=7)
     checkSilverHammerSubscribe("/highspeed_streamer/last_send_time", 1.0, 0.4, timeout=7)
 
-    checkSilverHammerSubscribe("/fc_from_ocs_eus/last_received_time", 10.0, 1.0, timeout=7)
-    checkSilverHammerSubscribe("/fc_from_ocs_low_speed/last_received_time", 10.0, 1.0, timeout=7)
-    checkSilverHammerSubscribe("/fc_from_ocs_reconfigure/last_received_time", 10.0, 1.0, timeout=7)
-    checkSilverHammerSubscribe("/fc_from_ocs_vehicle/last_received_time", 10.0, 1.0, timeout=7)
+    checkSilverHammerSubscribe("/fc_from_ocs_eus/last_received_time", 10.0, 8.0, timeout=7)
+    checkSilverHammerSubscribe("/fc_from_ocs_low_speed/last_received_time", 10.0, 8.0, timeout=7)
+    checkSilverHammerSubscribe("/fc_from_ocs_reconfigure/last_received_time", 10.0, 8.0, timeout=7)
+    checkSilverHammerSubscribe("/fc_from_ocs_vehicle/last_received_time", 10.0, 8.0, timeout=7)
 
     indexMessage("Check  Valve Recognition in FC")
     # Publish dummy input for valve recognition
