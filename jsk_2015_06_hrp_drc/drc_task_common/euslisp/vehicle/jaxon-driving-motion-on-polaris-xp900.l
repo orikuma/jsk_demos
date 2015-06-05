@@ -31,6 +31,9 @@
    ;; (send robot :angle-vector #f(-13.7393 -25.3936 -95.4094 71.4519 -7.39605 28.8591 30.4376 -19.3225 -88.6644 109.485 -20.8208 19.3216 5.68288 0.0 -0.472369 0.0 0.0 -0.900602 25.4208 -73.4803 49.5891 -47.773 -0.036939 13.1557 -20.6728 -31.1749 -18.8595 28.6218 -40.0612 -119.661 11.6674 -22.9237 11.7398)) ;; noda-sitting-pose
    ;; (send robot :angle-vector #f(-13.7323 -25.8376 -95.7889 82.4073 -16.562 29.2379 30.4377 -18.1196 -87.6194 110.528 -22.9086 18.1188 5.68288 0.0 -0.472369 -32.0 34.74 0.13164 24.9727 -71.0757 49.82 -44.5932 0.487797 12.7499 -21.7149 -26.8661 -14.9803 34.5785 -38.4324 -123.493 13.0696 -25.4864 6.78645)) ;; noda-sitting-pose-2
    (send robot :angle-vector #f(-13.7323 -25.8376 -95.7889 82.4073 -16.562 29.2379 30.4377 -18.1196 -87.6194 110.528 -22.9086 18.1188 5.68288 0.0 -0.472369 0.0 0.0 0.13164 24.9727 -71.0757 49.82 -44.5932 0.487797 12.7499 -21.7149 -26.8661 -14.9803 34.5785 -38.4324 -123.493 13.0696 -25.4864 6.78645)) ;; noda-sitting-pose-2 with neck 0
+   
+   (send robot :rleg :angle-vector #f(-12.3416 -23.2893 -85.0514 68.4228 -11.4389 26.4126)) ;; for drc final polaris
+   
    (when real
      (send *ri* :angle-vector (send robot :angle-vector) tm)
      (send *ri* :wait-interpolation)
@@ -100,7 +103,8 @@
         ;; (send robot :rleg :angle-vector #f(-8.43548 -16.9475 -96.4631 80.3675 -13.336 19.0749)) ;; move torso -100
         ;; (send robot :rleg :angle-vector #f(-8.75369 -17.4852 -99.9228 80.091 -9.69405 19.6926)) ;; fixed in real polaris
         ;; (send robot :rleg #f(30.4376 -19.3225 -88.6644 109.485 -20.8208 19.3216)) ;; noda-sitting-pose
-        (send robot :rleg :angle-vector #f(-12.8499 -24.172 -89.5563 69.4056 -13.128 27.3947)) ;; noda-sitting-pose fixed in real polaris
+        ;; (send robot :rleg :angle-vector #f(-12.8499 -24.172 -89.5563 69.4056 -13.128 27.3947)) ;; noda-sitting-pose fixed in real polaris
+        (send robot :rleg :angle-vector #f(-12.3416 -23.2893 -85.0514 68.4228 -11.4389 26.4126)) ;; for drc final polaris
         (setq approach-result t)
         )
        (:brake-pedal
