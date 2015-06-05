@@ -194,13 +194,13 @@ class VehicleUIWidget(QWidget):
         self.is_release_executing = False
         self.correct_button = QtGui.QPushButton("Correct Handle Pose")
         self.is_correct_executing = False
-        self.resume_button = QtGui.QPushButton("Resume Handle Pose")
-        self.is_resume_executing = False        
+        self.resume_button = QtGui.QPushButton("Approach Handle")
+        self.is_resume_executing = False
         self.initialize_button.clicked.connect(self.initializeButtonCallback) # needs to be initialize joy
         self.grasp_button.clicked.connect(self.service("drive/controller/grasp")) # needs to be synchronize joy
         self.release_button.clicked.connect(self.service("drive/controller/release"))
         self.correct_button.clicked.connect(self.service("drive/controller/correct")) # needs to be synchronize joy
-        self.resume_button.clicked.connect(self.service("drive/controller/resume"))
+        self.resume_button.clicked.connect(self.service("drive/controller/approach_handle"))
         action_vbox.addWidget(self.initialize_button)
         action_vbox.addWidget(self.grasp_button)
         action_vbox.addWidget(self.release_button)
@@ -211,19 +211,19 @@ class VehicleUIWidget(QWidget):
 
         reach_vbox = QtGui.QVBoxLayout(self)
         reach_group = QtGui.QGroupBox("", self)
-        self.reach_button = QtGui.QPushButton("Approach")
+        self.reach_button = QtGui.QPushButton("CorrectAccel")
         self.is_reach_executing = False
         menu = QtGui.QMenu()
-        approachHandleArmAction = QAction("Approach Handle Arm", self)
-        approachHandleArmAction.triggered.connect(self.service("drive/controller/approach_handle"))
+        approachHandleArmAction = QAction("X +5", self)
+        approachHandleArmAction.triggered.connect(self.service("drive/controller/resume"))
         menu.addAction(approachHandleArmAction)
-        approachAccelLegAction = QAction("Approach Accel Leg", self)
+        approachAccelLegAction = QAction("X -5", self)
         approachAccelLegAction.triggered.connect(self.service("drive/controller/approach_accel")) # needs to be synchronize joy
         menu.addAction(approachAccelLegAction)
-        approachSupportArmAction = QAction("Approach Support Arm", self)
+        approachSupportArmAction = QAction("Z +5", self)
         approachSupportArmAction.triggered.connect(self.service("drive/controller/reach_arm"))
         menu.addAction(approachSupportArmAction)
-        approachSupportLegAction = QAction("Approach Support Leg", self)
+        approachSupportLegAction = QAction("Z -5", self)
         approachSupportLegAction.triggered.connect(self.service("drive/controller/reach_leg"))
         menu.addAction(approachSupportLegAction)
         self.reach_button.setMenu(menu)
@@ -635,17 +635,17 @@ class VehicleUIWidget(QWidget):
             self.is_correct_executing = msg.correct_request
         if self.is_resume_executing != msg.resume_request:
             self.setServiceButtonColor(self.resume_button, msg.resume_request)
-            self.is_resume_executing = msg.resume_request
+            self.is_resume_executing = msg.approach_handle_request
         if self.is_overwrite_executing != msg.overwrite_handle_angle_request:
             self.setServiceButtonColor(self.overwrite_button, msg.overwrite_handle_angle_request)
             self.is_overwrite_executing = msg.overwrite_handle_angle_request
         if self.is_egress_executing != msg.egress_request:
             self.setServiceButtonColor(self.egress_button, msg.egress_request)
             self.is_egress_executing = msg.egress_request
-        if self.is_reach_executing != (msg.approach_handle_request or msg.approach_accel_request or msg.reach_arm_request or msg.reach_leg_request):
+        if self.is_reach_executing != (msg.resume_request or msg.approach_accel_request or msg.reach_arm_request or msg.reach_leg_request):
             self.setServiceButtonColor(self.reach_button,
-                                  (msg.approach_handle_request or msg.approach_accel_request or msg.reach_arm_request or msg.reach_leg_request))
-            self.is_reach_executing = (msg.approach_handle_request or msg.approach_accel_request or msg.reach_arm_request or msg.reach_leg_request)
+                                  (msg.resume_request or msg.approach_accel_request or msg.reach_arm_request or msg.reach_leg_request))
+            self.is_reach_executing = (msg.resume_request or msg.approach_accel_request or msg.reach_arm_request or msg.reach_leg_request)
 
         if self.is_set_handle_mode_executing != msg.set_handle_mode_request:
             self.setBackgroundColorInModeService(self.handle_mode_group, msg.set_handle_mode_request)

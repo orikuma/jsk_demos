@@ -217,31 +217,47 @@
   (:resume-callback
    (req)
    (let ((res (send req :response)))
-     (send self :resume-handle-pose)
+     ;; (send self :resume-handle-pose)
+     (send motion :robot :rleg :move-end-pos #f(5 0 0) :world)
+     (warn "Move :rleg ~A~%" #f(5 0 0))
+     (send self :accel-origin (send motion :robot :rleg :ankle-p :joint-angle))
+     (send motion :model2real :time 1000 :controller :rleg-controller)
      res
      )
    )
   (:approach-accel-callback
    (req)
    (let ((res (send req :response)))
-     (send self :approach-accel) ;; sync-controller is checked in default parameter
-     res
-     )
-   )
-  (:reach-leg-callback
-   (req)
-   (let ((res (send req :response)))
-     (send self :approach-floor :reach-until-touch t)
+     ;; (send self :resume-handle-pose)
+     (send motion :robot :rleg :move-end-pos #f(-5 0 0) :world)
+     (warn "Move :rleg ~A~%" #f(-5 0 0))
+     (send self :accel-origin (send motion :robot :rleg :ankle-p :joint-angle))
+     (send motion :model2real :time 1000 :controller :rleg-controller)
      res
      )
    )
   (:reach-arm-callback
    (req)
    (let ((res (send req :response)))
-     (send self :approach-fist :reach-until-touch t)
+     ;; (send self :resume-handle-pose)
+     (send motion :robot :rleg :move-end-pos #f(0 0 5) :world)
+     (warn "Move :rleg ~A~%" #f(0 0 5))
+     (send self :accel-origin (send motion :robot :rleg :ankle-p :joint-angle))
+     (send motion :model2real :time 1000 :controller :rleg-controller)
      res
      )
    )
+  (:reach-leg-callback
+   (req)
+   (let ((res (send req :response)))
+     ;; (send self :resume-handle-pose)
+     (send motion :robot :rleg :move-end-pos #f(0 0 -5) :world)
+     (warn "Move :rleg ~A~%" #f(0 0 -5))
+     (send self :accel-origin (send motion :robot :rleg :ankle-p :joint-angle))
+     (send motion :model2real :time 1000 :controller :rleg-controller)
+     res
+     )
+   )  
   (:egress-callback
    (req)
    (let ((res (send req :response)))
@@ -1129,6 +1145,7 @@
    (let ((pub-msg (instance std_msgs::Bool :init)))
      (send pub-msg :data (send motion :real val :use-real-robot-angle use-real-robot-angle))
      (ros::publish "/drive/controller/real" pub-msg)
+     (send motion :real)
      )
    )
 
