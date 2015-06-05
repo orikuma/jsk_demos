@@ -30,7 +30,9 @@
    ;; (send robot :angle-vector #f(-8.43548 -16.9475 -96.4631 80.3675 -13.336 19.0749 35.4682 -9.61909 -96.8849 109.094 -9.44266 2.10682 8.0 0.0 0.0 0.0 0.0 -13.7511 33.5688 -108.234 8.54591 -90.0 0.0 45.0 3.38633 0.0 55.0 20.0 15.0 -100.0 25.0 0.0 -45.0)) ;; move torso to -100
    ;; (send robot :angle-vector #f(-13.7393 -25.3936 -95.4094 71.4519 -7.39605 28.8591 30.4376 -19.3225 -88.6644 109.485 -20.8208 19.3216 5.68288 0.0 -0.472369 0.0 0.0 -0.900602 25.4208 -73.4803 49.5891 -47.773 -0.036939 13.1557 -20.6728 -31.1749 -18.8595 28.6218 -40.0612 -119.661 11.6674 -22.9237 11.7398)) ;; noda-sitting-pose
    ;; (send robot :angle-vector #f(-13.7323 -25.8376 -95.7889 82.4073 -16.562 29.2379 30.4377 -18.1196 -87.6194 110.528 -22.9086 18.1188 5.68288 0.0 -0.472369 -32.0 34.74 0.13164 24.9727 -71.0757 49.82 -44.5932 0.487797 12.7499 -21.7149 -26.8661 -14.9803 34.5785 -38.4324 -123.493 13.0696 -25.4864 6.78645)) ;; noda-sitting-pose-2
-   (send robot :angle-vector #f(-13.7323 -25.8376 -95.7889 82.4073 -16.562 29.2379 30.4377 -18.1196 -87.6194 110.528 -22.9086 18.1188 5.68288 0.0 -0.472369 0.0 0.0 0.13164 24.9727 -71.0757 49.82 -44.5932 0.487797 12.7499 -21.7149 -26.8661 -14.9803 34.5785 -38.4324 -123.493 13.0696 -25.4864 6.78645)) ;; noda-sitting-pose-2 with neck 0
+   ;; (send robot :angle-vector #f(-13.7323 -25.8376 -95.7889 82.4073 -16.562 29.2379 30.4377 -18.1196 -87.6194 110.528 -22.9086 18.1188 5.68288 0.0 -0.472369 0.0 0.0 0.13164 24.9727 -71.0757 49.82 -44.5932 0.487797 12.7499 -21.7149 -26.8661 -14.9803 34.5785 -38.4324 -123.493 13.0696 -25.4864 6.78645)) ;; noda-sitting-pose-2 with neck 0
+   (send robot :angle-vector #f(-13.1088 -26.1032 -91.8619 86.7696 -0.730332 29.3286 30.431 -17.6793 -86.2629 110.55 -22.8287 17.6794 5.7 0.0 -0.465 0.0 -0.00625 4.54627 33.4067 -69.7074 46.6672 -44.2961 -4.63689 9.32682 -22.2646 -27.4429 -20.8779 40.4233 -47.3861 -123.777 15.4516 -16.7169 4.58876)) ;; x direction step accel
+   
    (when real
      (send *ri* :angle-vector (send robot :angle-vector) tm)
      (send *ri* :wait-interpolation)
@@ -100,7 +102,8 @@
         ;; (send robot :rleg :angle-vector #f(-8.43548 -16.9475 -96.4631 80.3675 -13.336 19.0749)) ;; move torso -100
         ;; (send robot :rleg :angle-vector #f(-8.75369 -17.4852 -99.9228 80.091 -9.69405 19.6926)) ;; fixed in real polaris
         ;; (send robot :rleg #f(30.4376 -19.3225 -88.6644 109.485 -20.8208 19.3216)) ;; noda-sitting-pose
-        (send robot :rleg :angle-vector #f(-12.8499 -24.172 -89.5563 69.4056 -13.128 27.3947)) ;; noda-sitting-pose fixed in real polaris
+        ;; (send robot :rleg :angle-vector #f(-12.8499 -24.172 -89.5563 69.4056 -13.128 27.3947)) ;; noda-sitting-pose fixed in real polaris
+        (send robot :rleg :angle-vector #f(-13.1088 -26.1032 -91.8619 86.7696 -0.730332 29.3286))
         (setq approach-result t)
         )
        (:brake-pedal
@@ -127,6 +130,22 @@
   (:approach-floor
    (&rest args &key (start-impedance nil) (offset #f(0 0 10)) (reach-until-touch-thre 150) (max-dist 100) &allow-other-keys)
    (send-super* :approach-floor :start-impedance start-impedance :offset offset :reach-until-touch-thre reach-until-touch-thre :max-dist max-dist args)
+   )
+
+  ;; step accel by x direction
+  (:step-accel-pedal
+   (move-mm &key (time 1000) (relative t) (use-controller t))
+   (let (ik-result)
+     (setq ik-result (send robot :rleg :move-end-pos (float-vector move-mm 0 0) :world)) ;; only relative is supported
+     (when (and real ik-result)
+       (if use-controller
+           (send *ri* :angle-vector (send robot :angle-vector) time :rleg-controller)
+         (send *ri* :angle-vector (send robot :angle-vector) time)
+         )
+       (send *ri* :wait-interpolation)
+       )
+     (if ik-result move-mm ik-result)
+     )
    )
 
   ;; egress
