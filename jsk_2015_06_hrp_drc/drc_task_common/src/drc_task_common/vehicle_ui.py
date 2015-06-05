@@ -633,7 +633,7 @@ class VehicleUIWidget(QWidget):
         if self.is_correct_executing != msg.correct_request:
             self.setServiceButtonColor(self.correct_button, msg.correct_request)
             self.is_correct_executing = msg.correct_request
-        if self.is_resume_executing != msg.resume_request:
+        if self.is_resume_executing != msg.approach_request:
             self.setServiceButtonColor(self.resume_button, msg.resume_request)
             self.is_resume_executing = msg.approach_handle_request
         if self.is_overwrite_executing != msg.overwrite_handle_angle_request:
