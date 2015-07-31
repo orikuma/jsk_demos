@@ -22,10 +22,12 @@ fi
 source ${HOME}/ros/hydro/devel/setup.sh
 roslaunch gazebo_drive_simulator gazebo_drive_simulator.launch SIMULATION_LAUNCH:=${SIMULATION_LAUNCH} CMD_NAMESPACE:=${CMD_NAMESPACE} USE_HANDLE:=${USE_HANDLE} &
 sleep 25
+roslaunch gazebo_drive_simulator multisense_sl_relay.launch &
 rostopic pub --once /drc_world/robot_exit_car geometry_msgs/Pose '{}' # exit from wall
 sleep 2
 rostopic pub --once /drc_world/robot_enter_car geometry_msgs/Pose '{position: {y: -0.6, z: -0.05}}'
 rostopic pub --once ${CMD_NAMESPACE}/hand_brake/cmd std_msgs/Float64 '{ data : 0 }' # disable hand brake
+rostopic pub --once /multisense_sl/set_spindle_speed std_msgs/Float64 '{ data : 2.0 }'
 
 while true
 do

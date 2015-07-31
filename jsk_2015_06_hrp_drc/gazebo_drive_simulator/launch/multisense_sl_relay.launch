@@ -21,7 +21,7 @@
   <!-- relay for multisense_sl simulation topics
        hardware publishes to /joint_states, sim legacy publishes to /multisense/joint_states -->
   <node name="multisense_sl_joint_states_relay" pkg="topic_tools" type="relay"
-        args="/joint_states $(arg MULTISENSE_NS)joint_states" respawn="false" output="screen">
+        args="/joint_states $(arg MULTISENSE_NS)/joint_states" respawn="false" output="screen">
     <param name="lazy" type="bool" value="True"/>
   </node>
 
