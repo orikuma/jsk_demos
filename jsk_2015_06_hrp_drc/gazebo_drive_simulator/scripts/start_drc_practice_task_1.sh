@@ -1,6 +1,6 @@
 #! /bin/bash
 
-USE_HANDLE="true"
+USE_HANDLE="false"
 if [ $# -ge 1 ]; then
     USE_HANDLE=$1
 fi
