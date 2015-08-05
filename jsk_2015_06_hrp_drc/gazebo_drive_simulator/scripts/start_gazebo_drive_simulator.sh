@@ -27,7 +27,7 @@ rostopic pub --once /drc_world/robot_exit_car geometry_msgs/Pose '{}' # exit fro
 sleep 2
 rostopic pub --once /drc_world/robot_enter_car geometry_msgs/Pose '{position: {y: -0.6, z: -0.05}}'
 rostopic pub --once ${CMD_NAMESPACE}/hand_brake/cmd std_msgs/Float64 '{ data : 0 }' # disable hand brake
-rostopic pub --once /multisense_sl/set_spindle_speed std_msgs/Float64 '{ data : 2.0 }'
+rostopic pub --once /multisense_sl/set_spindle_speed std_msgs/Float64 '{ data : 1.0 }'
 
 while true
 do
