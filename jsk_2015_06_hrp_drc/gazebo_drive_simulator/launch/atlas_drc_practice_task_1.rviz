@@ -8,6 +8,10 @@ Panels:
         - /Status1
         - /TF1/Frames1
         - /MoveBase1
+        - /MoveBase1/Map1
+        - /MoveBase1/Map2
+        - /MoveBase1/Path1
+        - /MoveBase1/PointCloud21
         - /Gmapping1
         - /Gmapping1/LaserScan2
       Splitter Ratio: 0.512821
@@ -361,6 +365,8 @@ Visualization Manager:
           Value: true
         utorso:
           Value: true
+        viso_odom:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
@@ -369,64 +375,65 @@ Visualization Manager:
       Tree:
         map:
           odom:
-            base_footprint:
-              pelvis:
-                imu_link:
-                  {}
-                l_uglut:
-                  l_lglut:
-                    l_uleg:
-                      l_lleg:
-                        l_talus:
-                          l_foot:
+            viso_odom:
+              base_footprint:
+                pelvis:
+                  imu_link:
+                    {}
+                  l_uglut:
+                    l_lglut:
+                      l_uleg:
+                        l_lleg:
+                          l_talus:
+                            l_foot:
+                              {}
+                  ltorso:
+                    mtorso:
+                      utorso:
+                        car_center:
+                          pointcloud_to_scan_base:
                             {}
-                ltorso:
-                  mtorso:
-                    utorso:
-                      car_center:
-                        pointcloud_to_scan_base:
-                          {}
-                      head:
-                        center_bottom_led_frame:
-                          {}
-                        center_top_led_frame:
-                          {}
-                        head_imu_link:
-                          {}
-                        hokuyo_link:
-                          head_hokuyo_frame:
+                        head:
+                          center_bottom_led_frame:
                             {}
-                        left_camera_frame:
-                          left_camera_optical_frame:
+                          center_top_led_frame:
                             {}
-                        left_led_frame:
-                          {}
-                        right_camera_frame:
-                          right_camera_optical_frame:
+                          head_imu_link:
                             {}
-                        right_led_frame:
-                          {}
-                      l_clav:
-                        l_scap:
-                          l_uarm:
-                            l_larm:
-                              l_farm:
-                                l_hand:
-                                  {}
-                      r_clav:
-                        r_scap:
-                          r_uarm:
-                            r_larm:
-                              r_farm:
-                                r_hand:
-                                  {}
-                r_uglut:
-                  r_lglut:
-                    r_uleg:
-                      r_lleg:
-                        r_talus:
-                          r_foot:
+                          hokuyo_link:
+                            head_hokuyo_frame:
+                              {}
+                          left_camera_frame:
+                            left_camera_optical_frame:
+                              {}
+                          left_led_frame:
                             {}
+                          right_camera_frame:
+                            right_camera_optical_frame:
+                              {}
+                          right_led_frame:
+                            {}
+                        l_clav:
+                          l_scap:
+                            l_uarm:
+                              l_larm:
+                                l_farm:
+                                  l_hand:
+                                    {}
+                        r_clav:
+                          r_scap:
+                            r_uarm:
+                              r_larm:
+                                r_farm:
+                                  r_hand:
+                                    {}
+                  r_uglut:
+                    r_lglut:
+                      r_uleg:
+                        r_lleg:
+                          r_talus:
+                            r_foot:
+                              {}
       Update Interval: 0
       Value: true
     - Alpha: 0.5
@@ -487,6 +494,7 @@ Visualization Manager:
         MoveBase:
           Map: true
           Path: true
+          PointCloud2: true
           Value: true
         PointCloud2: true
         RobotModel: true
@@ -500,7 +508,7 @@ Visualization Manager:
       Zoom Factor: 1
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.7
+        - Alpha: 0.5
           Class: rviz/Map
           Color Scheme: map
           Draw Behind: false
@@ -508,15 +516,52 @@ Visualization Manager:
           Name: Map
           Topic: /move_base_node/local_costmap/costmap
           Value: true
+        - Alpha: 0.7
+          Class: rviz/Map
+          Color Scheme: map
+          Draw Behind: false
+          Enabled: true
+          Name: Map
+          Topic: /move_base_node/global_costmap/costmap
+          Value: true
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
-          Color: 25; 255; 0
+          Color: 0; 0; 255
           Enabled: true
           Name: Path
           Topic: /move_base_node/TrajectoryPlannerROS/local_plan
           Value: true
-      Enabled: false
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 10
+            Min Value: -10
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 85; 170; 0
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: true
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 0
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: PointCloud2
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.1
+          Style: Flat Squares
+          Topic: /obstacle_cloud/output
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+      Enabled: true
       Name: MoveBase
     - Class: rviz/Group
       Displays:
@@ -756,19 +801,19 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 35.4924
+      Distance: 41.2726
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 16.9298
-        Y: -1.27293
-        Z: 3.25664
+        X: 16.2288
+        Y: 0.419028
+        Z: -1.64849
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.244796
+      Pitch: 0.344797
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
       Yaw: 3.11995
