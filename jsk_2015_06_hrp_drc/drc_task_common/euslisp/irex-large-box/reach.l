@@ -1,11 +1,50 @@
-;; set-box-x-pos = 850[mm]
-;; x-calib-offset = -162.981[mm]
-;; y-calib-offset = -94.6289[mm]
-;; yaw-calib-offset = -0.037462[rad]
-;; *calib-offset-coords* = #<coordinates #X3749ec80  -162.981 -94.629 0.0 / -0.037 0.0 0.0>
+;; 5.irteusgl$ *calib-offset-coords*
+;; #<coordinates #X1b4ce630  -115.868 -102.183 0.0 / -0.017 0.0 0.0>
+;; #s(coordinates plist nil rot #2f((0.999856 0.016999 0.0) (-0.016999 0.999856 0.0) (0.0 0.0 1.0)) pos #f(-115.868 -102.183 0.0))
+(setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999856 0.016999 0.0) (-0.016999 0.999856 0.0) (0.0 0.0 1.0)) pos #f(-115.868 -102.183 0.0)))
 
-;; (dump-structure *standard-output* (make-coords :pos #f(-162.981 -94.629 0.0) :rpy '(-0.037 0.0 0.0)))
-(setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999316 0.036992 0.0) (-0.036992 0.999316 0.0) (0.0 0.0 1.0)) pos #f(-162.981 -94.629 0.0)))
+;; 4.irteusgl$ (dump-structure *standard-output* (make-coords :pos #f(950.26 127.809 0.0) :rpy '(0.032 0.0 0.0)))
+;; #s(coordinates plist nil rot #2f((0.999488 -0.031995 0.0) (0.031995 0.999488 0.0) (0.0 0.0 1.0)) pos #f(950.26 127.809 0.0))
+;; nil
+;; 5.irteusgl$ (setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999488 -0.031995 0.0) (0.031995 0.999488 0.0) (0.0 0.0 1.0)) pos #f(950.26 127.809 0.0)))
+;; #<coordinates #X3ee7ef70  950.26 127.809 0.0 / 0.032 0.0 0.0>
+;; (setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999488 -0.031995 0.0) (0.031995 0.999488 0.0) (0.0 0.0 1.0)) pos #f(950.26 127.809 0.0)))
+
+
+
+;; 23.irteusgl$ (dump-structure *standard-output* (make-coords :pos #f(92.439 -36.516 0.0) :rpy '(-0.007 0.0 0.0)))
+;; #s(coordinates plist nil rot #2f((0.999976 0.007 0.0) (-0.007 0.999976 0.0) (0.0 0.0 1.0)) pos #f(92.439 -36.516 0.0))
+;; nil
+;; 24.irteusgl$ (setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999976 0.007 0.0) (-0.007 0.999976 0.0) (0.0 0.0 1.0)) pos #f(92.439 -36.516 0.0)))
+;; #<coordinates #X1cb18bf8  92.439 -36.516 0.0 / -0.007 0.0 0.0>
+
+
+;; set-box-x-pos = 850[mm]
+;; x-calib-offset = -184.34[mm]
+;; y-calib-offset = -82.8429[mm]
+;; yaw-calib-offset = -0.024117[rad]
+;; *calib-offset-coords* = #<coordinates #X1cfc36f0  -184.34 -82.843 0.0 / -0.024 0.0 0.0>
+
+
+;; set-box-x-pos = 850[mm]
+;; x-calib-offset = 69.4433[mm]
+;; y-calib-offset = -18.3792[mm]
+;; yaw-calib-offset = 0.008245[rad]
+;; *calib-offset-coords* = #<coordinates #Xdb2a580  69.443 -18.379 0.0 / 0.008 0.0 0.0>
+
+;;;; set-box-x-pos = 850[mm]
+;;;; x-calib-offset = -162.981[mm]
+;;;; y-calib-offset = -94.6289[mm]
+;;;; yaw-calib-offset = -0.037462[rad]
+;;;; *calib-offset-coords* = #<coordinates #X3749ec80  -162.981 -94.629 0.0 / -0.037 0.0 0.0>
+
+;; (dump-structure *standard-output* (make-coords :pos #f(69.443 -18.379 0.0) :rpy '(0.008 0.0 0.0)))
+;;(setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999968 -0.008 0.0) (0.008 0.999968 0.0) (0.0 0.0 1.0)) pos #f(69.443 -18.379 0.0)))
+;; (setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999712 0.023998 0.0) (-0.023998 0.999712 0.0) (0.0 0.0 1.0)) pos #f(-184.34 -82.843 0.0)))
+
+;;;; (dump-structure *standard-output* (make-coords :pos #f(-162.981 -94.629 0.0) :rpy '(-0.037 0.0 0.0)))
+;; (setq *calib-offset-coords* #s(coordinates plist nil rot #2f((0.999316 0.036992 0.0) (-0.036992 0.999316 0.0) (0.0 0.0 1.0)) pos #f(-162.981 -94.629 0.0)))
+
 (setq *box-coords* nil)
 (load "package://drc_task_common/euslisp/robot-util.l")
 (load "package://drc_task_common/euslisp/irex-large-box/wooden-box-model.l")
@@ -52,6 +91,7 @@
   (set-primitive-marker-dimensions
    :x 598.0 :y 480.0 :z 710.0 :name "wooden_box"
    )
+  (apply-primitive-dimensions-to-midi-device)
   (send *robot* :reset-manip-pose)
   (send *robot* :head :neck-p :joint-angle (send *robot* :head :neck-p :max-angle))
   (send *robot* :fix-leg-to-coords (make-coords))
@@ -676,7 +716,7 @@
 (defun update-box-pose-by-sift (&key (calib-offset nil))
   (setq *box-coords* nil)
   (set-pose-10) ;; set box pose by sift recog
-  (if *box-coords* (apply-box-pose :calib-offset calib-offset) (ros::ros-info "not detected, fix box manually on rviz!"))  
+  (if *box-coords* (apply-box-pose :calib-offset calib-offset) (ros::ros-info "not detected, fix box manually on rviz!"))
   (set-primitive-marker-pose
    (send (send *wooden-box* :copy-worldcoords) :translate (float-vector 0 0 355)) "ground" :name "wooden_box"
    )
@@ -693,11 +733,12 @@
   (set-primitive-marker-dimensions
    :x 598.0 :y 480.0 :z 710.0 :name "wooden_box"
    )
+  (apply-primitive-dimensions-to-midi-device)
   (let* ((i 0))
     (do-until-key
      (warn "Loop: ~a~%" i)
      (update-box-pose-by-sift :calib-offset calib-offset)
-     (print (send *wooden-box* :worldcoords))
+     (print (send *wooden-box* :copy-worldcoords))
      (unix::usleep 10000) ;; 0.01sec
      (incf i)
 
@@ -706,12 +747,16 @@
   )
 
 (defun jaxon-maai-hosei-by-go-pos (box-instance &key (ref-box-pos (float-vector 850 0 0)) (gp-stop-thre 1.5) (calib-offset t))
-  (let* (proj-coords maai-coords gp-x gp-y gp-yaw)
+  (let* (proj-coords maai-coords gp-x-m gp-y-m gp-yaw-deg)
     (setq proj-coords (project-coords-to-ground (send box-instance :copy-worldcoords)))
+    (warn "ref-box-coords: ~a~%" (make-coords :pos ref-box-pos))
+    (warn "sift-box-coords: ~a~%" proj-coords)
     (setq maai-coords (send proj-coords :translate (v- ref-box-pos) :local))
+    (warn "maai-diff-coords: ~a~%" maai-coords)
     (setq gp-x-m (* 0.001 (elt (send maai-coords :worldpos) 0)))
     (setq gp-y-m (* 0.001 (elt (send maai-coords :worldpos) 1)))
     (setq gp-yaw-deg (rad2deg (elt (elt (send maai-coords :rpy-angle) 0) 0)))
+    ;; (warn "maai-diff-value: ~a~%" (norm2 (float-vector gp-x-m gp-y-m gp-yaw-deg)))
     (if (> (norm (float-vector gp-x-m gp-y-m)) gp-stop-thre)
         (progn
           (warn "Emergency: too far to go-pos !!!~%")
@@ -722,7 +767,9 @@
       (send *ri* :go-pos gp-x-m gp-y-m gp-yaw-deg)
       (send *ri* :wait-interpolation-seq)
       (update-box-pose-by-sift :calib-offset calib-offset)
-      (print (send *wooden-box* :copy-worldcoords))
+      (warn "ref-box-coords: ~a~%" (make-coords :pos ref-box-pos))
+      (warn "sift-box-coords: ~a~%" (project-coords-to-ground (send box-instance :copy-worldcoords)))
+      (warn "maai-diff-coords: ~a~%" (send (project-coords-to-ground (send box-instance :copy-worldcoords)) :translate (v- ref-box-pos) :local))
       )
     ))
 
@@ -730,7 +777,7 @@
   (update-box-pose-by-sift :calib-offset t)
   (warn ";; box pose OK?~%")
   (if (not (y-or-n-p))
-    (progn 
+    (progn
       (warn ";; revise box pose!~%")
       (warn ";; OK?~%")
       (if (not (y-or-n-p))
@@ -745,15 +792,24 @@
 (defun jaxon-box-okkake-push-demo (&key (push-distance 0.5))
   ;; (send *ri* :go-pos 0.6 0 0) ;; ToDo: play on rviz
   ;; (unix::sleep 1)
-  (warn ";; 1 kai~%")
-  (jaxon-wooden-box-okkake)
-  (unix::sleep 1)
-  (warn ";; 2 kai~%")
-  (jaxon-wooden-box-okkake)
-  (unix::sleep 1)
-  (warn ";; 3 kai~%")
-  (jaxon-wooden-box-okkake)
-  (unix::sleep 1)
+  (dotimes (i 10)
+    (warn ";; ~a kai~%" (+ i 1))
+    (jaxon-wooden-box-okkake)
+    (unix::sleep 1)
+    (warn ";; (jaxon-wooden-box-okkake) one more ?~%")
+    (when (not (y-or-n-p))
+      (return)
+      )
+    )
+  ;; (warn ";; 1 kai~%")
+  ;; (jaxon-wooden-box-okkake)
+  ;; (unix::sleep 1)
+  ;; (warn ";; 2 kai~%")
+  ;; (jaxon-wooden-box-okkake)
+  ;; (unix::sleep 1)
+  ;; (warn ";; 3 kai~%")
+  ;; (jaxon-wooden-box-okkake)
+  ;; (unix::sleep 1)
   (warn ";; (jaxon-push-main-all :push-distance ~a)~%" push-distance)
   (jaxon-push-main-all :push-distance push-distance)
   )
@@ -776,4 +832,4 @@
 ;; (warn "~%")
 ;; (warn "(jaxon-wooden-box-okkake) ;; sift recognition and go-pos~%")
 ;; (warn "(jaxon-push-main-all :push-distance 0.5) ;; reach and push 0.5[m] and release for box~%")
-(warn "(jaxon-box-okkake-push-demo :push-distance 0.5) ;; sift recognition and go-pos for 3 times, then reach and push 0.5[m] and release for box~%")
+(warn "(jaxon-box-okkake-push-demo :push-distance 0.5) ;; sift recognition and go-pos, then reach and push 0.5[m] and release for box~%")
