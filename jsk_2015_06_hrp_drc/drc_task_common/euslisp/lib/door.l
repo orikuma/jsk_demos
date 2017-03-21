@@ -142,7 +142,8 @@
 
 (defun door-stand-coords (door)
   (let ((c (send door :copy-worldcoords)))
-    (send c :translate (float-vector -900 -100 0))
+    ;; (send c :translate (float-vector -900 -100 0))
+    (send c :translate (float-vector -800 -100 0))
     c))
 
 (defun test-move-door-model-from-knob-coords ()

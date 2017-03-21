@@ -620,7 +620,7 @@
                      :collision-num collision-num2 :debug-view nil))
    (ros::ros-info "done")
    )
-     (if *avs*
+  (if *avs*
       (progn
         (bench
          ;; 5. exec motion
@@ -900,10 +900,13 @@
 ;; (run-door-walk-with-two-perception* 10 10 2 10 2 10 2)
 ;; (run-valve-walk-with-two-perception* 20 15 2 10 2 10 2)
 (defun demo-valve-only ()
+;;  (run-valve-walk-with-two-perception* 20 15 2 10 2 10 3))
   (run-valve-walk-with-two-perception* 20 15 2 10 2 10 1.5))
 (defun demo-door-only ()
-  (run-door-walk-with-two-perception* 10 10 2 10 2 10 2))
+;;  (run-door-walk-with-two-perception* 10 10 2 10 2 10 3))
+  (run-door-walk-with-two-perception* 10 10 2 10 2 10 1.5))
 (defun do-demo ()
+  (send *ri* :set-gait-generator-param :default-step-time 0.8)
   (demo-door-only)
   (move-door-to-valve)
   (demo-valve-only)
